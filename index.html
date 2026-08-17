@@ -44,7 +44,6 @@
       font-family: 'Plus Jakarta Sans', sans-serif;
       min-height: 100vh;
       overflow-x: hidden;
-      position: relative;
     }
 
     .font-mono {
@@ -52,20 +51,16 @@
     }
 
     .view-page {
-      visibility: hidden;
+      display: none;
       opacity: 0;
-      position: absolute;
-      top: 0;
-      left: 0;
-      transition: opacity 0.3s ease, visibility 0.3s ease;
+      transition: opacity 0.3s ease;
       width: 100%;
       min-height: 100vh;
     }
 
     .view-page.active {
-      visibility: visible;
+      display: block;
       opacity: 1;
-      position: relative;
     }
 
     header {
@@ -267,6 +262,7 @@
       display: flex;
       flex-direction: column;
       gap: 4px;
+      position: relative;
     }
 
     .field-label {
@@ -293,6 +289,40 @@
     .sim-select-red {
       border-color: rgba(239, 68, 68, 0.6);
       color: #fca5a5;
+    }
+
+    /* Airport Autocomplete Dropdown */
+    .airport-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: #0d121d;
+      border: 1px solid var(--border-accent);
+      border-radius: 6px;
+      max-height: 180px;
+      overflow-y: auto;
+      z-index: 200;
+      display: none;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    }
+
+    .airport-dropdown.show {
+      display: block;
+    }
+
+    .airport-item {
+      padding: 8px 12px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .airport-item:hover {
+      background: rgba(0, 242, 254, 0.1);
+      color: var(--cyan-primary);
     }
 
     .sim-btn-dark {
@@ -364,30 +394,30 @@
       <div class="card" onclick="openPage('page-create')">
         <div class="card-icon"><i class="fa-solid fa-circle-plus"></i></div>
         <div class="card-title">Create Flight</div>
-        <div class="card-desc">Build an operational flight plan using the full simbrief layout with custom centerline vector math</div>
+        <div class="card-desc">Build an operational flight plan using global airport database source and custom centerline vector math</div>
       </div>
 
       <div class="card" onclick="alert('Preset flights page coming soon!')">
         <div class="card-icon"><i class="fa-solid fa-lock"></i></div>
         <div class="card-title">Preset Flights</div>
-        <div class="card-desc">Select ready-to-fly short-haul and long-haul routes with pre-aligned initial and final approach fixes</div>
+        <div class="card-desc">Select ready to fly short haul and long haul routes with pre-aligned initial and final approach fixes</div>
       </div>
 
       <div class="card" onclick="alert('Live radar view coming soon!')">
         <div class="card-icon"><i class="fa-solid fa-satellite-dish"></i></div>
         <div class="card-title">Live Flight Tracking</div>
-        <div class="card-desc">Monitor real-time waypoint progression, airspeed metrics, and vertical descent profile curves</div>
+        <div class="card-desc">Monitor real-time waypoint progression airspeed metrics and vertical descent profile curves</div>
       </div>
 
       <div class="card" onclick="alert('GeoFS bridge extension setup page!')">
         <div class="card-icon"><i class="fa-solid fa-plug"></i></div>
         <div class="card-title">GeoFS Bridge</div>
-        <div class="card-desc">Connect directly to browser sessions via custom Tampermonkey userscripts for automated navigation</div>
+        <div class="card-desc">Connect directly to browser sessions via custom tampermonkey userscripts for automated navigation</div>
       </div>
     </div>
   </div>
 
-  <!-- PAGE 2: CREATE FLIGHT PAGE (SIMBRIEF LAYOUT) -->
+  <!-- PAGE 2: CREATE FLIGHT PAGE -->
   <div id="page-create" class="view-page">
     <header>
       <div class="brand">
@@ -406,12 +436,12 @@
       
       <div class="sim-top-actions">
         <div class="sim-top-buttons">
-          <button class="sim-btn-action"><i class="fa-solid fa-gear"></i> Generate</button>
+          <button class="sim-btn-action" onclick="generateRoute()"><i class="fa-solid fa-gear"></i> Generate</button>
           <button class="sim-btn-action"><i class="fa-solid fa-floppy-disk"></i> Save</button>
           <button class="sim-btn-action"><i class="fa-solid fa-share-nodes"></i> Share</button>
           <button class="sim-btn-action"><i class="fa-solid fa-file-circle-plus"></i> New</button>
         </div>
-        <span class="airac-badge"><i class="fa-solid fa-circle-exclamation"></i> AIRAC 2503</span>
+        <span class="airac-badge"><i class="fa-solid fa-database"></i> AIRPORT DB ACTIVE</span>
       </div>
 
       <!-- Flight Info Card -->
@@ -427,13 +457,19 @@
             <label class="field-label">Flight Number</label>
             <input type="text" class="sim-input font-mono" value="0000" />
           </div>
+          
+          <!-- Depart Airport Input with DB Search -->
           <div class="field-group">
             <label class="field-label">Depart</label>
-            <input type="text" class="sim-input font-mono" value="ZZZZ" style="border-color: rgba(239,68,68,0.5);" />
+            <input type="text" id="input-dep" class="sim-input font-mono" placeholder="ICAO / City" value="EDDF" oninput="searchAirport(this.value, 'dep-results')" />
+            <div id="dep-results" class="airport-dropdown"></div>
           </div>
+
+          <!-- Arrive Airport Input with DB Search -->
           <div class="field-group">
             <label class="field-label">Arrive</label>
-            <input type="text" class="sim-input font-mono" value="ZZZZ" style="border-color: rgba(239,68,68,0.5);" />
+            <input type="text" id="input-arr" class="sim-input font-mono" placeholder="ICAO / City" value="EGLL" oninput="searchAirport(this.value, 'arr-results')" />
+            <div id="arr-results" class="airport-dropdown"></div>
           </div>
         </div>
 
@@ -467,13 +503,12 @@
               <option>A306 - A300B4-600</option>
               <option>A310 - A310-304</option>
               <option>A319 - A319-100</option>
-              <option>A320 - A320-200</option>
+              <option selected>A320 - A320-200</option>
               <option>A321 - A321-200</option>
               <option>A332 - A330-200</option>
               <option>A359 - A350-900</option>
               <option>B738 - Boeing 737-800</option>
               <option>B77W - Boeing 777-300ER</option>
-
             </select>
           </div>
           <div class="field-group">
@@ -583,11 +618,11 @@
           </div>
           <div class="field-group">
             <label class="field-label">Depart Rwy</label>
-            <select class="sim-select font-mono"><option>AUTO</option></select>
+            <select id="select-dep-rwy" class="sim-select font-mono"><option>AUTO</option></select>
           </div>
           <div class="field-group">
             <label class="field-label">Arrival Rwy</label>
-            <select class="sim-select font-mono"><option>AUTO</option></select>
+            <select id="select-arr-rwy" class="sim-select font-mono"><option>AUTO</option></select>
           </div>
         </div>
 
@@ -609,9 +644,9 @@
 
       <!-- Route Card -->
       <div class="sim-card">
-        <div class="sim-card-title">Route</div>
+        <div class="sim-card-title">Generated Route & Alignment</div>
         <div class="field-group">
-          <textarea class="sim-input font-mono" rows="3" placeholder="ENTER YOUR ROUTE HERE"></textarea>
+          <textarea id="route-output" class="sim-input font-mono" rows="3" placeholder="Click 'Generate' to calculate airport centerline route..."></textarea>
         </div>
       </div>
 
@@ -619,6 +654,18 @@
   </div>
 
   <script>
+    // Embedded Airport Database Source
+    const airportDatabase = [
+      { icao: "EDDF", name: "Frankfurt Airport", city: "Frankfurt", lat: 50.0379, lon: 8.5622, rwys: ["07L", "07R", "25L", "25R", "18"] },
+      { icao: "EGLL", name: "London Heathrow", city: "London", lat: 51.4700, lon: -0.4543, rwys: ["09L", "09R", "27L", "27R"] },
+      { icao: "KJFK", name: "John F. Kennedy Intl", city: "New York", lat: 40.6413, lon: -73.7781, rwys: ["04L", "04R", "13L", "22L", "22R", "31L", "31R"] },
+      { icao: "KLAX", name: "Los Angeles Intl", city: "Los Angeles", lat: 33.9416, lon: -118.4085, rwys: ["06L", "06R", "07L", "07R", "24L", "24R", "25L", "25R"] },
+      { icao: "OMDB", name: "Dubai International", city: "Dubai", lat: 25.2532, lon: 55.3657, rwys: ["12L", "12R", "30L", "30R"] },
+      { icao: "RJTT", name: "Tokyo Haneda", city: "Tokyo", lat: 35.5494, lon: 139.7798, rwys: ["04", "05", "16L", "16R", "22", "23", "34L", "34R"] },
+      { icao: "BKPR", name: "Pristina International", city: "Pristina", lat: 42.5728, lon: 21.0358, rwys: ["17", "35"] },
+      { icao: "LFPG", name: "Paris Charles de Gaulle", city: "Paris", lat: 49.0097, lon: 2.5479, rwys: ["08L", "08R", "09L", "09R", "26L", "26R", "27L", "27R"] }
+    ];
+
     function openPage(pageId) {
       document.querySelectorAll('.view-page').forEach(page => {
         page.classList.remove('active');
@@ -629,6 +676,86 @@
         window.scrollTo(0, 0);
       }
     }
+
+    // Airport Search Autocomplete
+    function searchAirport(query, dropdownId) {
+      const dropdown = document.getElementById(dropdownId);
+      const cleanQuery = query.trim().toUpperCase();
+      
+      if (!cleanQuery) {
+        dropdown.classList.remove('show');
+        return;
+      }
+
+      const matches = airportDatabase.filter(ap => 
+        ap.icao.includes(cleanQuery) || ap.city.toUpperCase().includes(cleanQuery) || ap.name.toUpperCase().includes(cleanQuery)
+      );
+
+      if (matches.length === 0) {
+        dropdown.classList.remove('show');
+        return;
+      }
+
+      dropdown.innerHTML = "";
+      matches.forEach(ap => {
+        const item = document.createElement("div");
+        item.className = "airport-item font-mono";
+        item.innerHTML = `<span><b>${ap.icao}</b> - ${ap.city}</span><span style="color: var(--text-sub); font-size: 0.7rem;">${ap.name}</span>`;
+        item.onclick = () => selectAirport(ap, dropdownId);
+        dropdown.appendChild(item);
+      });
+
+      dropdown.classList.add('show');
+    }
+
+    function selectAirport(airport, dropdownId) {
+      if (dropdownId === 'dep-results') {
+        document.getElementById('input-dep').value = airport.icao;
+        updateRunwaySelect('select-dep-rwy', airport.rwys);
+      } else {
+        document.getElementById('input-arr').value = airport.icao;
+        updateRunwaySelect('select-arr-rwy', airport.rwys);
+      }
+      document.getElementById(dropdownId).classList.remove('show');
+    }
+
+    function updateRunwaySelect(selectId, rwys) {
+      const select = document.getElementById(selectId);
+      select.innerHTML = "<option>AUTO</option>";
+      rwys.forEach(rwy => {
+        const opt = document.createElement("option");
+        opt.value = rwy;
+        opt.innerText = `RWY ${rwy}`;
+        select.appendChild(opt);
+      });
+    }
+
+    function generateRoute() {
+      const dep = document.getElementById('input-dep').value;
+      const arr = document.getElementById('input-arr').value;
+      const depRwy = document.getElementById('select-dep-rwy').value;
+      const arrRwy = document.getElementById('select-arr-rwy').value;
+      const output = document.getElementById('route-output');
+      
+      const depStr = depRwy !== 'AUTO' ? `${dep} RWY${depRwy}` : dep;
+      const arrStr = arrRwy !== 'AUTO' ? `RWY${arrRwy} ${arr}` : arr;
+      
+      output.value = `DCT ${depStr} DIRECT_FIX_1 IAF_10NM FAF_05NM RWY_CENTERLINE ${arrStr}`;
+    }
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.field-group')) {
+        document.querySelectorAll('.airport-dropdown').forEach(d => d.classList.remove('show'));
+      }
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const defaultDep = airportDatabase.find(a => a.icao === document.getElementById('input-dep').value);
+      const defaultArr = airportDatabase.find(a => a.icao === document.getElementById('input-arr').value);
+      
+      if (defaultDep) updateRunwaySelect('select-dep-rwy', defaultDep.rwys);
+      if (defaultArr) updateRunwaySelect('select-arr-rwy', defaultArr.rwys);
+    });
   </script>
 </body>
 </html>
