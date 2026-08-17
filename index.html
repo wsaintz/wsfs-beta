@@ -3,38 +3,32 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>WS-FS Beta | Web-Sim Flight System</title>
+  <title>WS-FS | Web-Sim Flight System</title>
   
-  <!-- Fonts & CDN Dependencies -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  
-  <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-  
-  <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
   <style>
     :root {
-      --bg-dark: #080b11;
-      --bg-card: rgba(15, 23, 42, 0.65);
-      --bg-card-hover: rgba(30, 41, 59, 0.75);
+      --bg-dark: #0a0d14;
+      --bg-card: rgba(18, 24, 38, 0.7);
+      --bg-card-hover: rgba(28, 38, 58, 0.85);
       --border-glow: rgba(56, 189, 248, 0.2);
-      --border-accent: rgba(56, 189, 248, 0.4);
+      --border-accent: rgba(56, 189, 248, 0.5);
       
       --cyan-primary: #00f2fe;
-      --cyan-glow: rgba(0, 242, 254, 0.35);
+      --cyan-glow: rgba(0, 242, 254, 0.3);
       --green-accent: #10b981;
-      --green-glow: rgba(16, 185, 129, 0.35);
+      --red-accent: #ef4444;
       --amber-accent: #f59e0b;
       --text-main: #f8fafc;
       --text-sub: #94a3b8;
       
       --radius-lg: 16px;
       --radius-md: 10px;
-      --transition-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+      --transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     * {
@@ -48,25 +42,30 @@
       background-color: var(--bg-dark);
       color: var(--text-main);
       font-family: 'Plus Jakarta Sans', sans-serif;
-      height: 100vh;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
     }
 
     .font-mono {
       font-family: 'JetBrains Mono', monospace;
     }
 
-    .bg-glow {
+    .view-page {
+      visibility: hidden;
+      opacity: 0;
       position: absolute;
-      top: -10%;
-      left: -10%;
-      width: 50vw;
-      height: 50vh;
-      background: radial-gradient(circle, rgba(0, 242, 254, 0.08) 0%, rgba(0, 0, 0, 0) 70%);
-      pointer-events: none;
-      z-index: 1;
+      top: 0;
+      left: 0;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+      width: 100%;
+      min-height: 100vh;
+    }
+
+    .view-page.active {
+      visibility: visible;
+      opacity: 1;
+      position: relative;
     }
 
     header {
@@ -76,9 +75,11 @@
       align-items: center;
       justify-content: space-between;
       border-bottom: 1px solid var(--border-glow);
-      background: rgba(8, 11, 17, 0.8);
+      background: rgba(10, 13, 20, 0.85);
       backdrop-filter: blur(12px);
-      z-index: 1000;
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
 
     .brand {
@@ -88,8 +89,8 @@
     }
 
     .brand-icon {
-      width: 36px;
-      height: 36px;
+      width: 38px;
+      height: 38px;
       background: linear-gradient(135deg, var(--cyan-primary), #4f46e5);
       border-radius: var(--radius-md);
       display: flex;
@@ -100,674 +101,533 @@
 
     .brand-title {
       font-weight: 800;
-      font-size: 1.1rem;
-      letter-spacing: 0.5px;
+      font-size: 1.2rem;
       background: linear-gradient(to right, #ffffff, var(--cyan-primary));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
 
-    .badge-beta {
-      background: rgba(0, 242, 254, 0.1);
-      color: var(--cyan-primary);
-      border: 1px solid var(--border-accent);
-      padding: 2px 8px;
-      border-radius: 20px;
-      font-size: 0.65rem;
-      font-weight: 700;
-      letter-spacing: 1px;
-      text-transform: uppercase;
+    .home-hero {
+      padding: 60px 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+      text-align: center;
     }
 
-    .dispatch-bar {
-      display: flex;
-      gap: 10px;
-      align-items: center;
+    .hero-title {
+      font-size: 2.8rem;
+      font-weight: 800;
+      margin-bottom: 16px;
+      background: linear-gradient(to right, #ffffff, var(--cyan-primary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
 
-    .input-wrapper {
-      position: relative;
-      display: flex;
-      align-items: center;
-    }
-
-    .input-wrapper i {
-      position: absolute;
-      left: 14px;
+    .hero-subtitle {
       color: var(--text-sub);
-      font-size: 0.85rem;
+      font-size: 1.1rem;
+      max-width: 600px;
+      margin: 0 auto 40px;
     }
 
-    .simbrief-input {
-      background: rgba(15, 23, 42, 0.8);
-      border: 1px solid var(--border-glow);
-      color: #fff;
-      padding: 10px 14px 10px 38px;
-      border-radius: var(--radius-md);
-      font-size: 0.85rem;
-      width: 220px;
-      transition: all 0.3s var(--transition-smooth);
-    }
-
-    .simbrief-input:focus {
-      outline: none;
-      border-color: var(--cyan-primary);
-      box-shadow: 0 0 12px var(--cyan-glow);
-      width: 260px;
-    }
-
-    .btn-import {
-      background: linear-gradient(135deg, var(--cyan-primary), #0284c7);
-      color: #000;
-      font-weight: 700;
-      padding: 10px 20px;
-      border: none;
-      border-radius: var(--radius-md);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.85rem;
-      transition: all 0.3s var(--transition-smooth);
-      box-shadow: 0 0 15px var(--cyan-glow);
-    }
-
-    .btn-import:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 0 25px var(--cyan-glow);
-      filter: brightness(1.1);
-    }
-
-    main {
-      flex: 1;
+    .features-grid {
       display: grid;
-      grid-template-columns: 340px 1fr 360px;
-      gap: 16px;
-      padding: 16px;
-      position: relative;
-      z-index: 10;
-      height: calc(100vh - 64px);
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px 60px;
     }
 
-    .glass-panel {
+    .card {
       background: var(--bg-card);
       backdrop-filter: blur(16px);
       border: 1px solid var(--border-glow);
       border-radius: var(--radius-lg);
-      padding: 20px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      cursor: pointer;
+      transition: var(--transition);
+      position: relative;
+    }
+
+    .card:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--cyan-primary);
+      transform: translateY(-4px);
+      box-shadow: 0 8px 30px rgba(0, 242, 254, 0.15);
+    }
+
+    .card-icon {
+      font-size: 1.8rem;
+      color: var(--cyan-primary);
+      margin-bottom: 8px;
+    }
+
+    .card-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+
+    .card-desc {
+      color: var(--text-sub);
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+
+    .simbrief-layout {
+      max-width: 700px;
+      margin: 20px auto 60px;
+      padding: 0 16px;
       display: flex;
       flex-direction: column;
       gap: 16px;
-      overflow-y: auto;
-      transition: border-color 0.3s var(--transition-smooth);
     }
 
-    .panel-header {
+    .sim-top-actions {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-      padding-bottom: 12px;
+      background: rgba(18, 24, 38, 0.9);
+      padding: 12px 16px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-glow);
     }
 
-    .panel-title {
-      font-size: 0.85rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--text-sub);
+    .sim-top-buttons {
+      display: flex;
+      gap: 16px;
+    }
+
+    .sim-btn-action {
+      background: none;
+      border: none;
+      color: var(--text-main);
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
     }
 
-    .panel-title i {
+    .sim-btn-action:hover {
       color: var(--cyan-primary);
     }
 
-    .route-summary {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: rgba(0, 0, 0, 0.3);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      padding: 16px;
-      border-radius: var(--radius-md);
-      text-align: center;
+    .airac-badge {
+      background: var(--red-accent);
+      color: #fff;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
     }
 
-    .airport-code {
-      font-size: 1.8rem;
-      font-weight: 800;
-      letter-spacing: 1px;
+    .sim-card {
+      background: #141a26;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .sim-card-title {
+      font-weight: 700;
+      font-size: 1rem;
+      color: #fff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .sim-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .sim-grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+    }
+
+    .sim-grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .field-label {
+      font-size: 0.72rem;
+      color: var(--text-sub);
+      font-weight: 600;
+    }
+
+    .sim-input, .sim-select {
+      background: #0d121d;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      width: 100%;
+    }
+
+    .sim-input:focus, .sim-select:focus {
+      outline: none;
+      border-color: var(--cyan-primary);
+    }
+
+    .sim-select-red {
+      border-color: rgba(239, 68, 68, 0.6);
+      color: #fca5a5;
+    }
+
+    .sim-btn-dark {
+      background: #222c3d;
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+
+    .btn-exit {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--red-accent);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      padding: 8px 16px;
+      border-radius: var(--radius-md);
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: var(--transition);
+    }
+
+    .btn-exit:hover {
+      background: var(--red-accent);
       color: #fff;
     }
 
-    .airport-sub {
-      font-size: 0.7rem;
-      color: var(--text-sub);
-    }
-
-    .route-arrow {
-      color: var(--cyan-primary);
-      font-size: 1.2rem;
-      animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 0.4; transform: scale(1); }
-      50% { opacity: 1; transform: scale(1.15); }
-    }
-
-    .telemetry-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
-    }
-
-    .telemetry-card {
-      background: rgba(0, 0, 0, 0.25);
-      border: 1px solid rgba(255, 255, 255, 0.03);
-      padding: 12px;
-      border-radius: var(--radius-md);
-    }
-
-    .telemetry-label {
-      font-size: 0.68rem;
-      color: var(--text-sub);
-      margin-bottom: 4px;
-      text-transform: uppercase;
-    }
-
-    .telemetry-value {
-      font-size: 0.95rem;
-      font-weight: 700;
-      color: var(--cyan-primary);
-    }
-
-    #map-container {
-      position: relative;
-      border-radius: var(--radius-lg);
-      overflow: hidden;
-      border: 1px solid var(--border-glow);
-    }
-
-    #leaflet-map {
-      width: 100%;
-      height: 100%;
-      background: #020617;
-    }
-
-    .map-controls-overlay {
-      position: absolute;
-      top: 16px;
-      right: 16px;
-      z-index: 500;
-      display: flex;
-      gap: 8px;
-    }
-
-    .map-btn {
-      background: var(--bg-card);
-      backdrop-filter: blur(12px);
-      border: 1px solid var(--border-glow);
-      color: var(--text-main);
-      padding: 8px 12px;
-      border-radius: var(--radius-md);
-      cursor: pointer;
-      font-size: 0.8rem;
-      font-weight: 600;
-      transition: all 0.2s var(--transition-smooth);
-    }
-
-    .map-btn:hover {
-      background: var(--bg-card-hover);
-      border-color: var(--cyan-primary);
-      color: var(--cyan-primary);
-    }
-
-    .waypoint-list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      max-height: calc(100vh - 250px);
-      overflow-y: auto;
-      padding-right: 4px;
-    }
-
-    .waypoint-item {
-      background: rgba(0, 0, 0, 0.2);
-      border: 1px solid rgba(255, 255, 255, 0.03);
-      padding: 10px 12px;
-      border-radius: var(--radius-md);
+    .toggle-switch {
       display: flex;
       align-items: center;
       justify-content: space-between;
+      background: #0d121d;
+      padding: 8px 10px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .toggle-switch input {
+      accent-color: var(--green-accent);
+      width: 16px;
+      height: 16px;
       cursor: pointer;
-      transition: all 0.2s var(--transition-smooth);
-    }
-
-    .waypoint-item:hover {
-      background: rgba(0, 242, 254, 0.05);
-      border-color: var(--border-glow);
-    }
-
-    .waypoint-item.approach-wp {
-      border-left: 3px solid var(--green-accent);
-    }
-
-    .wp-ident {
-      font-weight: 700;
-      font-size: 0.85rem;
-    }
-
-    .wp-type {
-      font-size: 0.65rem;
-      color: var(--text-sub);
-    }
-
-    .wp-alt {
-      font-size: 0.8rem;
-      color: var(--cyan-primary);
-      font-weight: 600;
-    }
-
-    .export-section {
-      margin-top: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .btn-export {
-      width: 100%;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid var(--border-glow);
-      color: var(--text-main);
-      padding: 12px;
-      border-radius: var(--radius-md);
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 0.85rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      transition: all 0.2s var(--transition-smooth);
-    }
-
-    .btn-export:hover {
-      background: rgba(0, 242, 254, 0.1);
-      border-color: var(--cyan-primary);
-      color: var(--cyan-primary);
-    }
-
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
-    ::-webkit-scrollbar-thumb:hover { background: rgba(0, 242, 254, 0.3); }
-
-    .custom-marker {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    .wp-dot {
-      width: 8px;
-      height: 8px;
-      background: var(--cyan-primary);
-      border-radius: 50%;
-      box-shadow: 0 0 10px var(--cyan-primary);
-    }
-
-    .wp-dot-approach {
-      width: 10px;
-      height: 10px;
-      background: var(--green-accent);
-      border-radius: 50%;
-      box-shadow: 0 0 12px var(--green-accent);
     }
   </style>
 </head>
 <body>
 
-  <div class="bg-glow"></div>
-
-  <header>
-    <div class="brand">
-      <div class="brand-icon">
-        <i class="fa-solid fa-plane-departure" style="color: #000; font-size: 0.9rem;"></i>
+  <!-- PAGE 1: HOME PAGE -->
+  <div id="page-home" class="view-page active">
+    <header>
+      <div class="brand">
+        <div class="brand-icon">
+          <i class="fa-solid fa-plane-departure" style="color: #000; font-size: 1rem;"></i>
+        </div>
+        <span class="brand-title">WS-FS Hub</span>
       </div>
-      <span class="brand-title">WS-FS</span>
-      <span class="badge-beta">Beta v1.0</span>
+    </header>
+
+    <div class="home-hero">
+      <h1 class="hero-title">Web-Sim Flight System</h1>
+      <p class="hero-subtitle">Dispatch routes align runway centerlines and send automated approach vectors straight to flight simulators</p>
     </div>
 
-    <div class="dispatch-bar">
-      <div class="input-wrapper">
-        <i class="fa-solid fa-user"></i>
-        <input type="text" id="simbrief-user" class="simbrief-input" placeholder="SimBrief Username / Pilot ID" value="DemoUser" />
+    <div class="features-grid">
+      <div class="card" onclick="openPage('page-create')">
+        <div class="card-icon"><i class="fa-solid fa-circle-plus"></i></div>
+        <div class="card-title">Create Flight</div>
+        <div class="card-desc">Build an operational flight plan using the full simbrief layout with custom centerline vector math</div>
       </div>
-      <button class="btn-import" onclick="fetchSimBriefData()">
-        <i class="fa-solid fa-cloud-arrow-down"></i>
-        <span>Fetch OFP</span>
+
+      <div class="card" onclick="alert('Preset flights page coming soon!')">
+        <div class="card-icon"><i class="fa-solid fa-lock"></i></div>
+        <div class="card-title">Preset Flights</div>
+        <div class="card-desc">Select ready-to-fly short-haul and long-haul routes with pre-aligned initial and final approach fixes</div>
+      </div>
+
+      <div class="card" onclick="alert('Live radar view coming soon!')">
+        <div class="card-icon"><i class="fa-solid fa-satellite-dish"></i></div>
+        <div class="card-title">Live Flight Tracking</div>
+        <div class="card-desc">Monitor real-time waypoint progression, airspeed metrics, and vertical descent profile curves</div>
+      </div>
+
+      <div class="card" onclick="alert('GeoFS bridge extension setup page!')">
+        <div class="card-icon"><i class="fa-solid fa-plug"></i></div>
+        <div class="card-title">GeoFS Bridge</div>
+        <div class="card-desc">Connect directly to browser sessions via custom Tampermonkey userscripts for automated navigation</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE 2: CREATE FLIGHT PAGE (SIMBRIEF LAYOUT) -->
+  <div id="page-create" class="view-page">
+    <header>
+      <div class="brand">
+        <div class="brand-icon">
+          <i class="fa-solid fa-plane-arrival" style="color: #000; font-size: 1rem;"></i>
+        </div>
+        <span class="brand-title">SimBrief Dispatch</span>
+      </div>
+      <button class="btn-exit" onclick="openPage('page-home')">
+        <i class="fa-solid fa-xmark"></i>
+        <span>Exit</span>
       </button>
+    </header>
+
+    <div class="simbrief-layout">
+      
+      <div class="sim-top-actions">
+        <div class="sim-top-buttons">
+          <button class="sim-btn-action"><i class="fa-solid fa-gear"></i> Generate</button>
+          <button class="sim-btn-action"><i class="fa-solid fa-floppy-disk"></i> Save</button>
+          <button class="sim-btn-action"><i class="fa-solid fa-share-nodes"></i> Share</button>
+          <button class="sim-btn-action"><i class="fa-solid fa-file-circle-plus"></i> New</button>
+        </div>
+        <span class="airac-badge"><i class="fa-solid fa-circle-exclamation"></i> AIRAC 2503</span>
+      </div>
+
+      <!-- Flight Info Card -->
+      <div class="sim-card">
+        <div class="sim-card-title">Flight Info</div>
+        
+        <div class="sim-grid-4">
+          <div class="field-group">
+            <label class="field-label">Airline</label>
+            <input type="text" class="sim-input font-mono" value="ZZZ" />
+          </div>
+          <div class="field-group">
+            <label class="field-label">Flight Number</label>
+            <input type="text" class="sim-input font-mono" value="0000" />
+          </div>
+          <div class="field-group">
+            <label class="field-label">Depart</label>
+            <input type="text" class="sim-input font-mono" value="ZZZZ" style="border-color: rgba(239,68,68,0.5);" />
+          </div>
+          <div class="field-group">
+            <label class="field-label">Arrive</label>
+            <input type="text" class="sim-input font-mono" value="ZZZZ" style="border-color: rgba(239,68,68,0.5);" />
+          </div>
+        </div>
+
+        <div class="sim-grid-2">
+          <div class="field-group">
+            <label class="field-label">Alternate</label>
+            <select class="sim-select font-mono"><option>AUTO</option></select>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Departure Time (EOBT)</label>
+            <input type="text" class="sim-input font-mono" value="17 Aug 2026 - 21:00" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Aircraft Info Card -->
+      <div class="sim-card">
+        <div class="sim-card-title">
+          <span>Aircraft Info</span>
+          <button class="sim-btn-dark">Open Airframe Editor</button>
+        </div>
+
+        <div class="sim-grid-2">
+          <div class="field-group">
+            <label class="field-label">Aircraft</label>
+            <select class="sim-select sim-select-red font-mono">
+              <option>None</option>
+              <option>A225 - Antonov An-225</option>
+              <option>BCS1 - A220-100</option>
+              <option>BCS3 - A220-300</option>
+              <option>A306 - A300B4-600</option>
+              <option>A310 - A310-304</option>
+              <option>A319 - A319-100</option>
+              <option>A320 - A320-200</option>
+              <option>A321 - A321-200</option>
+              <option>A332 - A330-200</option>
+              <option>A359 - A350-900</option>
+              <option>B738 - Boeing 737-800</option>
+              <option>B77W - Boeing 777-300ER</option>
+
+            </select>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Airframe</label>
+            <select class="sim-select sim-select-red font-mono"><option>0 Airframes Available</option></select>
+          </div>
+        </div>
+
+        <div class="sim-grid-3">
+          <div class="field-group">
+            <label class="field-label">Climb</label>
+            <select class="sim-select font-mono"><option>AUTO</option></select>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Cruise Profile</label>
+            <select class="sim-select font-mono"><option>AUTO</option></select>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Descent</label>
+            <select class="sim-select font-mono"><option>AUTO</option></select>
+          </div>
+        </div>
+
+        <div class="sim-grid-3">
+          <div class="field-group">
+            <label class="field-label">ATC Callsign</label>
+            <input type="text" class="sim-input font-mono" value="ZZZ0000" />
+          </div>
+          <div class="field-group">
+            <label class="field-label">Fuel Factor</label>
+            <select class="sim-select font-mono"><option>P00</option></select>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Registration</label>
+            <input type="text" class="sim-input font-mono" value="N999SB" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Selections Card -->
+      <div class="sim-card">
+        <div class="sim-card-title">
+          <span>Selections</span>
+          <div>
+            <span class="airac-badge" style="background: #ef4444;">Outdated AIRAC</span>
+            <button class="sim-btn-dark" style="margin-left: 8px;">Save Defaults</button>
+          </div>
+        </div>
+
+        <div class="sim-grid-2">
+          <div class="field-group">
+            <label class="field-label">OFP Layout</label>
+            <select class="sim-select font-mono"><option>LIDO</option></select>
+          </div>
+          <div class="field-group">
+            <label class="field-label">AIRAC Cycle</label>
+            <select class="sim-select font-mono"><option>AIRAC 2503 - 20Mar25 to 16Apr25</option></select>
+          </div>
+        </div>
+
+        <div class="sim-grid-3">
+          <div class="field-group">
+            <label class="field-label">Units</label>
+            <select class="sim-select font-mono"><option>Kilograms</option></select>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Flight Maps</label>
+            <select class="sim-select font-mono"><option>Detailed</option></select>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Taxi Time (Min)</label>
+            <input type="text" class="sim-input font-mono" value="20 / 8" />
+          </div>
+        </div>
+
+        <div class="sim-grid-2">
+          <div class="toggle-switch">
+            <span class="field-label">Detailed Navlog</span>
+            <input type="checkbox" checked />
+          </div>
+          <div class="toggle-switch">
+            <span class="field-label">ETOPS Planning</span>
+            <input type="checkbox" />
+          </div>
+          <div class="toggle-switch">
+            <span class="field-label">Plan Stepclimbs</span>
+            <input type="checkbox" />
+          </div>
+          <div class="toggle-switch">
+            <span class="field-label">Runway Analysis</span>
+            <input type="checkbox" checked />
+          </div>
+        </div>
+      </div>
+
+      <!-- Optional Entries Card -->
+      <div class="sim-card">
+        <div class="sim-card-title">
+          <span>Optional Entries</span>
+          <button class="sim-btn-dark">Hide Options <i class="fa-solid fa-angle-up"></i></button>
+        </div>
+
+        <div class="sim-grid-3">
+          <div class="field-group">
+            <label class="field-label">Sched Block Time</label>
+            <input type="text" class="sim-input font-mono" value="0 : 00" />
+          </div>
+          <div class="field-group">
+            <label class="field-label">Depart Rwy</label>
+            <select class="sim-select font-mono"><option>AUTO</option></select>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Arrival Rwy</label>
+            <select class="sim-select font-mono"><option>AUTO</option></select>
+          </div>
+        </div>
+
+        <div class="sim-grid-3">
+          <div class="field-group">
+            <label class="field-label">Altitude</label>
+            <input type="text" class="sim-input font-mono" value="AUTO" />
+          </div>
+          <div class="field-group">
+            <label class="field-label">Passengers</label>
+            <input type="text" class="sim-input font-mono" value="AUTO" />
+          </div>
+          <div class="field-group">
+            <label class="field-label">Freight</label>
+            <input type="text" class="sim-input font-mono" value="NONE" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Route Card -->
+      <div class="sim-card">
+        <div class="sim-card-title">Route</div>
+        <div class="field-group">
+          <textarea class="sim-input font-mono" rows="3" placeholder="ENTER YOUR ROUTE HERE"></textarea>
+        </div>
+      </div>
+
     </div>
-  </header>
-
-  <main>
-    <div class="glass-panel">
-      <div class="panel-header">
-        <span class="panel-title"><i class="fa-solid fa-route"></i> Flight Dispatch</span>
-        <span id="ofp-status" class="badge-beta" style="background: rgba(16, 185, 129, 0.1); color: var(--green-accent); border-color: rgba(16, 185, 129, 0.3);">READY</span>
-      </div>
-
-      <div class="route-summary">
-        <div>
-          <div id="dep-icao" class="airport-code font-mono">EDDF</div>
-          <div id="dep-name" class="airport-sub">Frankfurt</div>
-        </div>
-        <i class="fa-solid fa-plane route-arrow"></i>
-        <div>
-          <div id="arr-icao" class="airport-code font-mono">EGLL</div>
-          <div id="arr-name" class="airport-sub">Heathrow</div>
-        </div>
-      </div>
-
-      <div class="telemetry-grid">
-        <div class="telemetry-card">
-          <div class="telemetry-label">Aircraft Type</div>
-          <div id="aircraft-type" class="telemetry-value font-mono">A320-200</div>
-        </div>
-        <div class="telemetry-card">
-          <div class="telemetry-label">Cruise Altitude</div>
-          <div id="cruise-alt" class="telemetry-value font-mono">FL340</div>
-        </div>
-        <div class="telemetry-card">
-          <div class="telemetry-label">Planned Runway</div>
-          <div id="arr-rwy" class="telemetry-value font-mono">27L</div>
-        </div>
-        <div class="telemetry-card">
-          <div class="telemetry-label">Route Distance</div>
-          <div id="route-dist" class="telemetry-value font-mono">382 NM</div>
-        </div>
-      </div>
-
-      <div class="panel-header" style="margin-top: 8px;">
-        <span class="panel-title"><i class="fa-solid fa-sliders"></i> Alignment Engine</span>
-      </div>
-
-      <div class="telemetry-card" style="display: flex; flex-direction: column; gap: 8px;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span class="telemetry-label" style="margin: 0;">Extended Centerline</span>
-          <input type="checkbox" id="toggle-alignment" checked onchange="updateRouteDisplay()" style="accent-color: var(--cyan-primary); cursor: pointer;" />
-        </div>
-        <div style="font-size: 0.7rem; color: var(--text-sub);">
-          Injects 10 NM (IAF) and 5 NM (FAF) alignment nodes on arrival centerline.
-        </div>
-      </div>
-
-      <div class="export-section">
-        <button class="btn-export" onclick="copyGeoFSScript()">
-          <i class="fa-solid fa-terminal" style="color: var(--cyan-primary);"></i>
-          <span>Copy GeoFS Autopilot Command</span>
-        </button>
-      </div>
-    </div>
-
-    <div id="map-container">
-      <div class="map-controls-overlay">
-        <button class="map-btn" onclick="recenterMap()"><i class="fa-solid fa-crosshairs"></i> Recenter Route</button>
-      </div>
-      <div id="leaflet-map"></div>
-    </div>
-
-    <div class="glass-panel">
-      <div class="panel-header">
-        <span class="panel-title"><i class="fa-solid fa-list-ol"></i> Waypoint Sequence</span>
-        <span id="wp-count" class="font-mono" style="font-size: 0.75rem; color: var(--text-sub);">0 Nodes</span>
-      </div>
-
-      <div id="waypoint-list" class="waypoint-list font-mono"></div>
-
-      <div class="export-section">
-        <button class="btn-export" onclick="exportJSON()">
-          <i class="fa-solid fa-file-code" style="color: var(--green-accent);"></i>
-          <span>Export WS-FS JSON Package</span>
-        </button>
-      </div>
-    </div>
-  </main>
-
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  </div>
 
   <script>
-    let map = null;
-    let routePolyline = null;
-    let alignmentPolyline = null;
-    let mapMarkers = [];
-    
-    let currentOFP = {
-      depIcao: "EDDF",
-      arrIcao: "EGLL",
-      aircraft: "B738",
-      altitude: "FL360",
-      distance: "356 NM",
-      runway: "27L",
-      runwayLat: 51.4649,
-      runwayLon: -0.4341,
-      runwayHeading: 270,
-      waypoints: [
-        { ident: "EDDF", lat: 50.0379, lon: 8.5622, alt: "0 FT", type: "DEP" },
-        { ident: "CINDY", lat: 50.2114, lon: 7.9221, alt: "FL140", type: "WAYPOINT" },
-        { ident: "SULUS", lat: 50.5183, lon: 4.8821, alt: "FL360", type: "WAYPOINT" },
-        { ident: "DVR", lat: 51.1314, lon: 1.3522, alt: "FL180", type: "WAYPOINT" },
-        { ident: "BIG", lat: 51.3311, lon: 0.0342, alt: "8000 FT", type: "WAYPOINT" },
-        { ident: "EGLL", lat: 51.4700, lon: -0.4543, alt: "83 FT", type: "ARR" }
-      ]
-    };
-
-    document.addEventListener("DOMContentLoaded", () => {
-      initMap();
-      renderUI();
-      window.addEventListener('resize', () => { if (map) map.invalidateSize(); });
-    });
-
-    function initMap() {
-      map = L.map('leaflet-map', { zoomControl: false, attributionControl: false }).setView([50.8, 3.5], 6);
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19, subdomains: 'abcd' }).addTo(map);
-    }
-
-    function calculateOffsetPoint(lat, lon, headingDeg, distanceNM) {
-      const R = 3440.065;
-      const d = distanceNM;
-      const brng = ((headingDeg + 180) % 360) * (Math.PI / 180);
-
-      const lat1 = lat * (Math.PI / 180);
-      const lon1 = lon * (Math.PI / 180);
-
-      const lat2 = Math.asin(
-        Math.sin(lat1) * Math.cos(d / R) +
-        Math.cos(lat1) * Math.sin(d / R) * Math.cos(brng)
-      );
-
-      const lon2 = lon1 + Math.atan2(
-        Math.sin(brng) * Math.sin(d / R) * Math.cos(lat1),
-        Math.cos(d / R) - Math.sin(lat1) * Math.sin(lat2)
-      );
-
-      return { lat: lat2 * (180 / Math.PI), lon: lon2 * (180 / Math.PI) };
-    }
-
-    function renderUI() {
-      if (routePolyline) map.removeLayer(routePolyline);
-      if (alignmentPolyline) map.removeLayer(alignmentPolyline);
-      mapMarkers.forEach(m => map.removeLayer(m));
-      mapMarkers = [];
-
-      document.getElementById("dep-icao").innerText = currentOFP.depIcao;
-      document.getElementById("arr-icao").innerText = currentOFP.arrIcao;
-      document.getElementById("aircraft-type").innerText = currentOFP.aircraft;
-      document.getElementById("cruise-alt").innerText = currentOFP.altitude;
-      document.getElementById("arr-rwy").innerText = currentOFP.runway;
-      document.getElementById("route-dist").innerText = currentOFP.distance;
-
-      const activeWaypoints = [...currentOFP.waypoints];
-      const isAlignmentEnabled = document.getElementById("toggle-alignment").checked;
-
-      let approachNodes = [];
-      if (isAlignmentEnabled && currentOFP.runwayLat) {
-        const iafCoords = calculateOffsetPoint(currentOFP.runwayLat, currentOFP.runwayLon, currentOFP.runwayHeading, 10.0);
-        const fafCoords = calculateOffsetPoint(currentOFP.runwayLat, currentOFP.runwayLon, currentOFP.runwayHeading, 5.0);
-
-        const iafNode = { ident: "IAF-10", lat: iafCoords.lat, lon: iafCoords.lon, alt: "3000 FT", type: "APPROACH" };
-        const fafNode = { ident: "FAF-05", lat: fafCoords.lat, lon: fafCoords.lon, alt: "1800 FT", type: "APPROACH" };
-
-        approachNodes = [iafNode, fafNode];
-        const arrIdx = activeWaypoints.length - 1;
-        activeWaypoints.splice(arrIdx, 0, iafNode, fafNode);
-      }
-
-      const standardCoords = currentOFP.waypoints.map(w => [w.lat, w.lon]);
-      routePolyline = L.polyline(standardCoords, { color: '#00f2fe', weight: 3, opacity: 0.75, dashArray: '6, 8' }).addTo(map);
-
-      if (isAlignmentEnabled && approachNodes.length > 0) {
-        const lastStandard = currentOFP.waypoints[currentOFP.waypoints.length - 2];
-        const alignCoords = [
-          [lastStandard.lat, lastStandard.lon],
-          [approachNodes[0].lat, approachNodes[0].lon],
-          [approachNodes[1].lat, approachNodes[1].lon],
-          [currentOFP.runwayLat, currentOFP.runwayLon]
-        ];
-
-        alignmentPolyline = L.polyline(alignCoords, { color: '#10b981', weight: 4, opacity: 0.9 }).addTo(map);
-      }
-
-      const wpListContainer = document.getElementById("waypoint-list");
-      wpListContainer.innerHTML = "";
-      document.getElementById("wp-count").innerText = `${activeWaypoints.length} Nodes`;
-
-      activeWaypoints.forEach((wp) => {
-        const isApproach = wp.type === "APPROACH";
-        const markerClass = isApproach ? "wp-dot-approach" : "wp-dot";
-        const customIcon = L.divIcon({ className: 'custom-marker', html: `<div class="${markerClass}"></div>`, iconSize: [12, 12] });
-
-        const marker = L.marker([wp.lat, wp.lon], { icon: customIcon }).addTo(map);
-        marker.bindPopup(`<b>${wp.ident}</b><br/>Alt: ${wp.alt}<br/>Type: ${wp.type}`);
-        mapMarkers.push(marker);
-
-        const wpEl = document.createElement("div");
-        wpEl.className = `waypoint-item ${isApproach ? 'approach-wp' : ''}`;
-        wpEl.onclick = () => {
-          map.flyTo([wp.lat, wp.lon], 11, { duration: 1.2 });
-          marker.openPopup();
-        };
-
-        wpEl.innerHTML = `
-          <div>
-            <div class="wp-ident">${wp.ident}</div>
-            <div class="wp-type">${wp.type}</div>
-          </div>
-          <div class="wp-alt">${wp.alt}</div>
-        `;
-        wpListContainer.appendChild(wpEl);
+    function openPage(pageId) {
+      document.querySelectorAll('.view-page').forEach(page => {
+        page.classList.remove('active');
       });
-
-      recenterMap();
-    }
-
-    function updateRouteDisplay() { renderUI(); }
-
-    function recenterMap() {
-      if (routePolyline) map.fitBounds(routePolyline.getBounds(), { padding: [50, 50] });
-    }
-
-    async function fetchSimBriefData() {
-      const username = document.getElementById("simbrief-user").value.trim();
-      const statusBadge = document.getElementById("ofp-status");
-
-      if (!username) {
-        alert("Please enter a valid SimBrief Username or Pilot ID");
-        return;
+      const targetPage = document.getElementById(pageId);
+      if (targetPage) {
+        targetPage.classList.add('active');
+        window.scrollTo(0, 0);
       }
-
-      statusBadge.innerText = "FETCHING";
-      statusBadge.style.color = "var(--amber-accent)";
-      statusBadge.style.borderColor = "rgba(245, 158, 11, 0.3)";
-
-      try {
-        const targetUrl = `https://www.simbrief.com/api/xml.fetcher.php?username=${username}&json=1`;
-        const proxyUrl = `https://api.corsproxy.io/?${encodeURIComponent(targetUrl)}`;
-        
-        const res = await fetch(proxyUrl);
-        if (!res.ok) throw new Error("API Network response failed");
-        
-        const data = await res.json();
-        if (data.result && data.result === "Error") throw new Error(data.message || "User OFP not found");
-
-        currentOFP.depIcao = data.origin.icao_code;
-        currentOFP.arrIcao = data.destination.icao_code;
-        currentOFP.aircraft = data.aircraft.icaocode;
-        currentOFP.altitude = `FL${data.general.initial_altitude / 100}`;
-        currentOFP.distance = `${data.general.route_distance} NM`;
-        currentOFP.runway = data.destination.plan_rwy;
-        currentOFP.runwayLat = parseFloat(data.destination.pos_lat);
-        currentOFP.runwayLon = parseFloat(data.destination.pos_long);
-        currentOFP.runwayHeading = parseFloat(data.destination.plan_rwy_heading || 270);
-
-        if (data.navlog && data.navlog.fix) {
-          const parsedWps = data.navlog.fix.map(fix => ({
-            ident: fix.ident,
-            lat: parseFloat(fix.pos_lat),
-            lon: parseFloat(fix.pos_long),
-            alt: fix.altitude_ft > 10000 ? `FL${Math.round(fix.altitude_ft / 100)}` : `${fix.altitude_ft} FT`,
-            type: "WAYPOINT"
-          }));
-          currentOFP.waypoints = parsedWps;
-        }
-
-        statusBadge.innerText = "LOADED";
-        statusBadge.style.color = "var(--green-accent)";
-        statusBadge.style.borderColor = "rgba(16, 185, 129, 0.3)";
-        renderUI();
-
-      } catch (err) {
-        console.warn("SimBrief fetch failed, using internal offline fallback data.", err);
-        statusBadge.innerText = "OFFLINE DEMO";
-        statusBadge.style.color = "var(--amber-accent)";
-        renderUI();
-      }
-    }
-
-    function copyGeoFSScript() {
-      const activeWaypoints = [...currentOFP.waypoints];
-      if (document.getElementById("toggle-alignment").checked) {
-        const iafCoords = calculateOffsetPoint(currentOFP.runwayLat, currentOFP.runwayLon, currentOFP.runwayHeading, 10.0);
-        const fafCoords = calculateOffsetPoint(currentOFP.runwayLat, currentOFP.runwayLon, currentOFP.runwayHeading, 5.0);
-        
-        const arrIdx = activeWaypoints.length - 1;
-        activeWaypoints.splice(arrIdx, 0, 
-          { ident: "IAF-10", lat: iafCoords.lat, lon: iafCoords.lon },
-          { ident: "FAF-05", lat: fafCoords.lat, lon: fafCoords.lon }
-        );
-      }
-
-      const formattedRoute = activeWaypoints.map(wp => [wp.lat, wp.lon]);
-      const scriptText = `/* WS-FS Auto-Injected Route */ geofs.autopilot.setRoute(${JSON.stringify(formattedRoute)});`;
-
-      navigator.clipboard.writeText(scriptText).then(() => {
-        alert("WS-FS GeoFS Command copied to clipboard! Paste into your browser developer console while running GeoFS.");
-      });
-    }
-
-    function exportJSON() {
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(currentOFP, null, 2));
-      const downloadAnchor = document.createElement('a');
-      downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `WSFS_Route_${currentOFP.depIcao}_${currentOFP.arrIcao}.json`);
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
     }
   </script>
 </body>
